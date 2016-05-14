@@ -22,27 +22,50 @@
 ##
 # @author Griswald Brooks
 
-## @file find_blob_vid.py Script for finding color blob in video.
+## @file find_blob_vid.py Script for finding the Nao robot's orange colors in video.
 
-import cv2
-import numpy as np
 import argparse
+import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def main():
     # Get command line args.
     parser = argparse.ArgumentParser()
-    parser.add_argument('image_file')
+    parser.add_argument('video_file')
     args = parser.parse_args()
 
     # Get video file.
-    cap = cv2.VideoCapture(args.image_file)
+    cap = cv2.VideoCapture(args.video_file)
 
     # Surrogate datatypes for scatter plot.
     # TODO: Get rid of this.
     all_keypoints_x = []
     all_keypoints_y = []
+
+    # Setup SimpleBlobDetector.
+    params = cv2.SimpleBlobDetector_Params()
+
+    # Change thresholds
+    params.minThreshold = 10
+    params.maxThreshold = 255
+    params.minDistBetweenBlobs = 10
+
+    # Filter by Color and Area.
+    params.filterByColor = True
+    params.filterByArea = True
+    params.filterByCircularity = False
+    params.filterByConvexity = False
+    params.filterByInertia = False
+
+    # Look for white blobs.
+    params.blobColor = 255
+    # Blobs can't be too small.
+    params.minArea = 160
+
+    # Set up the detector with default parameters.
+    detector = cv2.SimpleBlobDetector_create(params)
 
     while(cap.isOpened()):
 
@@ -61,7 +84,7 @@ def main():
         # Convert BGR to HSV
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        # define range of orange color in HSV
+        # define range of Nao's orange color in HSV
         lower_orange = np.array([0, 75, 75])
         upper_orange = np.array([7, 255, 255])
 
@@ -74,42 +97,10 @@ def main():
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, open_kernel)
 
-        # Setup SimpleBlobDetector parameters.
-        params = cv2.SimpleBlobDetector_Params()
-
-        # Change thresholds
-        params.minThreshold = 10
-        params.maxThreshold = 255
-        params.minDistBetweenBlobs = 10
-
-        # Filter by Color.
-        params.filterByColor = True
-        params.blobColor = 255
-        # Filter by Area.
-        params.filterByArea = True
-        params.minArea = 160
-        # params.maxArea = 280
-
-        # # Filter by Circularity
-        params.filterByCircularity = False
-        # params.minCircularity = 0.1
-
-        # # Filter by Convexity
-        params.filterByConvexity = False
-        # params.minConvexity = 0.87
-
-        # # Filter by Inertia
-        params.filterByInertia = False
-        # params.minInertiaRatio = 0.01
-
-        # Set up the detector with default parameters.
-        detector = cv2.SimpleBlobDetector_create(params)
-
         # Detect blobs.
         keypoints = detector.detect(mask)
 
         for keypoint in keypoints:
-            print keypoint.pt
             all_keypoints_x.append(keypoint.pt[0])
             all_keypoints_y.append(keypoint.pt[1])
 
@@ -123,7 +114,9 @@ def main():
         # Show keypoints
         cv2.imshow("Keypoints", im_with_keypoints)
         # cv2.imshow("Mask", mask)
-        cv2.waitKey(10)
+        # cv2.waitKey(10)
+        if cv2.waitKey(10) & 0xFF == ord('q'):
+            break
 
     # Save keypoints.
     np.savetxt('path.positions', np.transpose([all_keypoints_x, all_keypoints_y]), delimiter=',')

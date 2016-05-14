@@ -22,7 +22,7 @@
 ##
 # @author Griswald Brooks
 
-## @file find_blob_im.py Script for finding color blob in image.
+## @file find_blob_im.py Script for finding the Nao's orange colors in image.
 
 import cv2
 import numpy as np

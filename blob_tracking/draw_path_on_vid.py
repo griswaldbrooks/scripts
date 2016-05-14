@@ -34,11 +34,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('video_file')
     parser.add_argument('path_file')
+    parser.add_argument('scatter_file')
     args = parser.parse_args()
 
     # Load path.
     path = np.loadtxt(args.path_file, delimiter=',')
     path = path.reshape((-1, 1, 2)).astype(np.int32)
+
+    # Check for scatter path.
+    if args.scatter_file is not None:
+        scatter = np.loadtxt(args.scatter_file, delimiter=',')
+        scatter = scatter.reshape((-1, 1, 2)).astype(np.int32)
 
     # Get video file.
     cap = cv2.VideoCapture(args.video_file)
@@ -59,6 +65,8 @@ def main():
 
         # Draw lines.
         cv2.polylines(frame, [path], False, (0, 0, 255), thickness=2)
+        if args.scatter_file is not None:
+            cv2.polylines(frame, [scatter], False, (255, 0, 0), thickness=2)
 
         cv2.imshow("Path", frame)
         cv2.waitKey(10)
