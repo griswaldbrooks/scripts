@@ -32,21 +32,22 @@ import argparse
 def main():
     # Get command line args.
     parser = argparse.ArgumentParser()
-    parser.add_argument('image_file')
+    parser.add_argument('image_file', metavar='image-file-name',
+                        help='name of the image to find Nao in')
     args = parser.parse_args()
 
     # Read image
     im = cv2.imread(args.image_file)
 
     # Convert BGR to HSV
-    hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2HSV)
 
     # define range of orange color in HSV
     lower_orange = np.array([0, 75, 75])
     upper_orange = np.array([7, 255, 255])
 
     # Threshold the HSV image to get only orange colors
-    mask = cv2.inRange(hsv, lower_orange, upper_orange)
+    mask = cv2.inRange(im, lower_orange, upper_orange)
 
     # Setup SimpleBlobDetector parameters.
     params = cv2.SimpleBlobDetector_Params()
@@ -55,44 +56,30 @@ def main():
     params.minThreshold = 10
     params.maxThreshold = 255
 
-    # Filter by Color.
+    # Filter by Color and Area.
     params.filterByColor = True
-    params.blobColor = 255
-    # Filter by Area.
     params.filterByArea = True
-    params.minArea = 200
-
-    # # Filter by Circularity
     params.filterByCircularity = False
-    # params.minCircularity = 0.1
-
-    # # Filter by Convexity
     params.filterByConvexity = False
-    # params.minConvexity = 0.87
-
-    # # Filter by Inertia
     params.filterByInertia = False
-    # params.minInertiaRatio = 0.01
 
-    for i in range(0, 500):
+    params.blobColor = 255
+    params.minArea = 160
 
-        params.minArea = i
+    # Set up the detector with default parameters.
+    detector = cv2.SimpleBlobDetector_create(params)
 
-        # Set up the detector with default parameters.
-        detector = cv2.SimpleBlobDetector_create(params)
+    # Detect blobs.
+    keypoints = detector.detect(mask)
 
-        # Detect blobs.
-        keypoints = detector.detect(mask)
+    # Draw detected blobs as red circles.
+    # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+    im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-        # Draw detected blobs as red circles.
-        # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-        im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    # Show keypoints
+    cv2.imshow("Keypoints", im_with_keypoints)
 
-        # Show keypoints
-        cv2.imshow("Keypoints", im_with_keypoints)
-        # cv2.imshow("Mask", mask)
-        print "params.minArea = %i" % i
-        cv2.waitKey(500)
+    cv2.waitKey(0)
 
 if __name__ == '__main__':
     main()

@@ -34,7 +34,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('video_file')
     parser.add_argument('path_file')
-    parser.add_argument('scatter_file')
+    parser.add_argument('scatter_file', nargs='?')
     args = parser.parse_args()
 
     # Load path.
@@ -48,6 +48,11 @@ def main():
 
     # Get video file.
     cap = cv2.VideoCapture(args.video_file)
+    # Create the writer.
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter('out.avi', fourcc, int(cap.get(cv2.CAP_PROP_FPS)), (width, height))
 
     while(cap.isOpened()):
 
@@ -58,18 +63,20 @@ def main():
         if not ret:
             break
 
-        # Rotate frame -90 degrees
-        rows, cols, ch = frame.shape
-        R = cv2.getRotationMatrix2D((cols/2, rows/2), -90, 1)
-        frame = cv2.warpAffine(frame, R, (cols, rows))
-
         # Draw lines.
-        cv2.polylines(frame, [path], False, (0, 0, 255), thickness=2)
+        cv2.polylines(frame, [path], False, (0, 183, 44), thickness=2, lineType=cv2.LINE_AA)
         if args.scatter_file is not None:
-            cv2.polylines(frame, [scatter], False, (255, 0, 0), thickness=2)
+            n_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
+            cv2.polylines(frame, [scatter[0:n_frame]], False, (20, 20, 20), thickness=1, lineType=cv2.LINE_AA)
+
+        # Save image.
+        out.write(frame)
 
         cv2.imshow("Path", frame)
-        cv2.waitKey(10)
+        if cv2.waitKey(10) & 0xFF == ord('q'):
+            break
+
+    out.release()
 
 if __name__ == '__main__':
     main()

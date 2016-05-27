@@ -50,7 +50,7 @@ def main():
     # Change thresholds
     params.minThreshold = 10
     params.maxThreshold = 255
-    params.minDistBetweenBlobs = 10
+    params.minDistBetweenBlobs = 50
 
     # Filter by Color and Area.
     params.filterByColor = True
@@ -62,7 +62,7 @@ def main():
     # Look for white blobs.
     params.blobColor = 255
     # Blobs can't be too small.
-    params.minArea = 160
+    params.minArea = 120
 
     # Set up the detector with default parameters.
     detector = cv2.SimpleBlobDetector_create(params)
@@ -76,26 +76,26 @@ def main():
         if not ret:
             break
 
-        # Rotate frame -90 degrees
-        rows, cols, ch = frame.shape
-        R = cv2.getRotationMatrix2D((cols/2, rows/2), -90, 1)
-        frame = cv2.warpAffine(frame, R, (cols, rows))
-
         # Convert BGR to HSV
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # define range of Nao's orange color in HSV
-        lower_orange = np.array([0, 75, 75])
-        upper_orange = np.array([7, 255, 255])
+        lower_orange = np.array([0, 120, 50])
+        upper_orange = np.array([25, 255, 255])
+
+        lower_reddish = np.array([350, 95, 200])
+        upper_reddish = np.array([360, 160, 160])
 
         # Threshold the HSV image to get only orange colors
-        mask = cv2.inRange(hsv, lower_orange, upper_orange)
+        mask_orange = cv2.inRange(hsv, lower_orange, upper_orange)
+        mask_reddish = cv2.inRange(hsv, lower_reddish, upper_reddish)
+        mask = cv2.bitwise_or(mask_orange, mask_reddish)
 
         # Do a closing and opening to filter out holes and spots
-        close_kernel = np.ones((15, 15), np.uint8)
-        open_kernel = np.ones((5, 5), np.uint8)
+        close_kernel = np.ones((50, 50), np.uint8)
+        open_kernel = np.ones((10, 10), np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, open_kernel)
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, open_kernel)
 
         # Detect blobs.
         keypoints = detector.detect(mask)
