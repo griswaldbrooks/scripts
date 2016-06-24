@@ -59,7 +59,7 @@ def main():
     data = np.loadtxt(args.filename, delimiter=',')
     ##############################################################################
     # Compute DBSCAN
-    db = DBSCAN(eps=10, min_samples=10).fit(data)
+    db = DBSCAN(eps=10, min_sampzles=10).fit(data)
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     core_samples_mask[db.core_sample_indices_] = True
     labels = db.labels_

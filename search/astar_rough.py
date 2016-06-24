@@ -25,29 +25,12 @@
 ## @file astar_rough.py Module for doing an astar search.
 
 from copy import deepcopy
-import numpy as np
 from numpy import linalg as la
-
-
-class Node:
-    def __init__(self, state):
-        self._state = np.array(state)
-        self._neighbors = []
-
-    def __eq__(self, node):
-        return (self.get_state() == node.get_state()).all()
-
-    def get_neighbors(self):
-        return self._neighbors
-
-    def get_state(self):
-        return self._state
-
-    def set_state(self, state):
-        self._state = np.array(state)
-
-    def add_neighbor(self, neighbor):
-        self._neighbors.append(neighbor)
+from nodes import Node
+# from node_maps import createMap1
+from node_maps import createMapFromImage
+from view_map import printMap
+from view_map import viewMap
 
 
 class AStarNode(Node):
@@ -56,7 +39,6 @@ class AStarNode(Node):
         self._neighbors = node.get_neighbors()
         self._fscore = float("inf")
         self._gscore = float("inf")
-        self._predecessor = None
 
     def set_fscore(self, score):
         self._fscore = score
@@ -64,17 +46,14 @@ class AStarNode(Node):
     def set_gscore(self, score):
         self._gscore = score
 
-    def set_predecessor(self, anode):
-        self._predecessor = anode
-
     def get_fscore(self):
         return self._fscore
 
     def get_gscore(self):
         return self._gscore
 
-    def get_predecessor(self):
-        return self._predecessor
+    def get_cost(self):
+        return self.get_fscore()
 
 
 class Searcher:
@@ -98,15 +77,26 @@ class Searcher:
 
     def cost_to_goal(self, node):
         return la.norm(node.get_state() - self._goal_state.get_state())
+        # return 0
 
     def cost_to_node(self, node1, node2):
         return la.norm(node1.get_state() - node2.get_state())
 
     def in_closed_set(self, node):
-        return any((node == c_node).all() for c_node in self._closed)
+        # return any((node == c_node).all() for c_node in self._closed)
+        try:
+            self._closed.index(node)
+            return True
+        except Exception:
+            return False
 
     def in_open_set(self, node):
-        return any((node == c_node).all() for c_node in self._open)
+        # return any((node == c_node).all() for c_node in self._open)
+        try:
+            self._open.index(node)
+            return True
+        except Exception:
+            return False
 
     def path_length(self):
         return len(self._path)
@@ -132,12 +122,11 @@ class Searcher:
 
             # Expand node.
             c_node = self._open.pop(0)
-            print("Current Node:" + str(c_node.get_state()))
+            self._map.append(c_node)
 
             # Is this the goal?
             if c_node == self._goal_state:
                 # Reconstruct the path.
-                print("Made it!")
                 self._goal_state = c_node
                 self._generate_path()
                 return
@@ -147,8 +136,6 @@ class Searcher:
 
             # Check to see if neighbors need to be expanded or cost updated.
             c_neighbors = c_node.get_neighbors()
-            for neighbor in c_neighbors:
-                print("     Neighbor Node: " + str(neighbor.get_state()))
 
             for n_node in c_neighbors:
                 # If it's closed it doesn't need to be checked.
@@ -165,120 +152,42 @@ class Searcher:
                     self._open.append(an_node)
                 else:
                     # Find the node in the open set.
-                    bn_node = [node for node in self._open if node == an_node]
-                    if bn_node[0].get_gscore() >= an_node.get_gscore():
-                        bn_node[0] = an_node
-
-
-def createMap1():
-    # Define nodes.
-    n0 = Node([0, 0])
-    # n1 = Node([0, 1])
-    n2 = Node([0, 2])
-    n3 = Node([0, 3])
-    n4 = Node([0, 4])
-    n5 = Node([1, 0])
-    # n6 = Node([1, 1])
-    n7 = Node([1, 2])
-    # n8 = Node([1, 3])
-    n9 = Node([1, 4])
-    n10 = Node([2, 0])
-    n11 = Node([2, 1])
-    n12 = Node([2, 2])
-    # n13 = Node([2, 3])
-    n14 = Node([2, 4])
-    n15 = Node([3, 0])
-    n16 = Node([3, 1])
-    n17 = Node([3, 2])
-    n18 = Node([3, 3])
-    n19 = Node([3, 4])
-
-    # Build map.
-    n0.add_neighbor(n5)
-
-    n5.add_neighbor(n0)
-    n5.add_neighbor(n10)
-
-    n10.add_neighbor(n5)
-    n10.add_neighbor(n11)
-    n10.add_neighbor(n15)
-
-    n15.add_neighbor(n10)
-    n15.add_neighbor(n16)
-
-    n11.add_neighbor(n10)
-    n11.add_neighbor(n12)
-    n11.add_neighbor(n16)
-
-    n16.add_neighbor(n11)
-    n16.add_neighbor(n17)
-    n16.add_neighbor(n15)
-
-    n12.add_neighbor(n7)
-    n12.add_neighbor(n17)
-    n12.add_neighbor(n11)
-
-    n17.add_neighbor(n12)
-    n17.add_neighbor(n18)
-    n17.add_neighbor(n16)
-
-    n18.add_neighbor(n17)
-    n18.add_neighbor(n19)
-
-    n19.add_neighbor(n18)
-    n19.add_neighbor(n14)
-
-    n14.add_neighbor(n19)
-    n14.add_neighbor(n9)
-
-    n9.add_neighbor(n4)
-    n9.add_neighbor(n14)
-
-    n4.add_neighbor(n9)
-    n4.add_neighbor(n3)
-
-    n3.add_neighbor(n4)
-    n3.add_neighbor(n2)
-
-    n2.add_neighbor(n3)
-    n2.add_neighbor(n7)
-
-    n7.add_neighbor(n2)
-    n7.add_neighbor(n12)
-
-    return [n0, n2, n3, n4, n5, n7, n9, n10, n11, n12, n14, n15, n16, n17, n18, n19]
-
-
-def printMap(map):
-    for node in map:
-        print("Node State: " + str(node.get_state()))
-        print("Neighbors: ")
-        for neighbor in node.get_neighbors():
-            print("     Node State: " + str(neighbor.get_state()))
+                    # bn_node = [node for node in self._open if node == an_node]
+                    # if bn_node[0].get_gscore() >= an_node.get_gscore():
+                    #     bn_node[0] = an_node
+                    b_ndx = self._open.index(an_node)
+                    if self._open[b_ndx].get_gscore() >= an_node.get_gscore():
+                        self._open[b_ndx] = an_node
 
 
 def main():
 
     # Get a map.
-    map = createMap1()
+    # map = createMap1()
+    map = createMapFromImage('Simple_maze_small1.png')
 
     # TODO: Convert to coordinates.
-    n_s = [node for node in map if node == Node([0, 0])]
+    # n_s = [node for node in map if node == Node([0, 0])]
+    # n_s = n_s[0]
+    # n_f = [node for node in map if node == Node([1, 4])]
+    # n_f = n_f[0]
+    n_s = [node for node in map if node == Node([85, 5])]
     n_s = n_s[0]
-    n_f = [node for node in map if node == Node([1, 4])]
+    n_f = [node for node in map if node == Node([38, 42])]
     n_f = n_f[0]
 
     print("Start Node: " + str(n_s.get_state()))
 
     # Find path.
     s = Searcher()
-    s.add_map(map)
+    # s.add_map(map)
     s.set_start(n_s)
     s.set_goal(n_f)
     s.find_path()
 
     print s.path_length()
-    printMap(s._path)   
+    # printMap(s._path)
+    viewMap(s._map, path=s._path)
 
 if __name__ == '__main__':
     main()
